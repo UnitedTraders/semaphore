@@ -2,48 +2,70 @@ package tasks
 
 import (
 	"bytes"
-	"net/smtp"
+	"html/template"
 	"strconv"
 
 	"github.com/ansible-semaphore/semaphore/models"
 	"github.com/ansible-semaphore/semaphore/util"
 )
 
+const emailTemplate = `Subject: Task '{{ .Alias }}' failed
+
+Task {{ .TaskId }} with template '{{ .Alias }}' was failed!
+Task log: <a href='{{ .TaskUrl }}'>{{ .TaskUrl }}</a>`
+
+type Alert struct {
+	TaskId  string
+	Alias   string
+	TaskUrl string
+}
+
 func (t *task) sendMailAlert() {
-	for _, user := range t.users {
 
-		c, err := smtp.Dial(util.Config.EmailHost + ":" + util.Config.EmailPort)
-		if err != nil {
-			t.log("Can't connect to SMTP server!")
-			panic(err)
-		}
+	if util.Config.EmailAlert == true {
 
-		userObj, err := models.FetchUser(user)
-		if err != nil {
-			t.log("Can't find user Email!")
-			panic(err)
-		}
+		if t.alert == true {
 
-		defer c.Close()
-		// Set the sender and recipient.
-		c.Mail(util.Config.EmailSender)
-		c.Rcpt(userObj.Email)
-		// Send the email body.
-		wc, err := c.Data()
-		if err != nil {
-			t.log("Can't create Email!")
-			panic(err)
+			mailHost := util.Config.EmailHost + ":" + util.Config.EmailPort
+
+			var mailBuffer bytes.Buffer
+			alert := Alert{TaskId: strconv.Itoa(t.task.ID), Alias: t.template.Alias, TaskUrl: util.Config.WebHost + "/project/" + strconv.Itoa(t.template.ProjectID)}
+			tpl := template.New("mail body template")
+			tpl, err := tpl.Parse(emailTemplate)
+			err = tpl.Execute(&mailBuffer, alert)
+
+			if err != nil {
+				t.log("Can't generate alert template!")
+				panic(err)
+			}
+
+			for _, user := range t.users {
+
+				userObj, err := models.FetchUser(user)
+
+				if userObj.Alert == true {
+					if err != nil {
+						t.log("Can't find user Email!")
+						panic(err)
+					}
+
+					t.log("Sending email to " + userObj.Email + " from " + util.Config.EmailSender)
+					err = util.SendMail(mailHost, util.Config.EmailSender, userObj.Email, mailBuffer)
+					if err != nil {
+						t.log("Can't send email!")
+						t.log("Error: " + err.Error())
+						panic(err)
+					}
+
+				} else {
+					t.log("Alerts disabled for user " + userObj.Name + ", nothing to do.")
+				}
+			}
+		} else {
+			t.log("Alerts disabled for this project, nothing to do.")
 		}
-		defer wc.Close()
-		mailSubj := "Task '" + t.template.Alias + "' failed"
-		mailBody := "Task '" + strconv.Itoa(t.task.ID) + "' with template '" + t.template.Alias + "' was failed! \nTask log: " + util.Config.WebHost + "/project/" + strconv.Itoa(t.template.ProjectID)
-		t.log(mailBody)
-		buf := bytes.NewBufferString("Subject: " + mailSubj + "\r\n\r\n" + mailBody + "\r\n")
-		if _, err = buf.WriteTo(wc); err != nil {
-			t.log("Can't send Email!")
-			panic(err)
-		}
-		t.log("Email to " + userObj.Email + " successfully sent from " + util.Config.EmailSender)
+	} else {
+		t.log("Alerts globally disabled, nothing to do.")
 	}
 
 }
