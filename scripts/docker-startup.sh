@@ -9,6 +9,8 @@ SEMAPHORE_DB_PORT="${SEMAPHORE_DB_PORT:-3306}"
 SEMAPHORE_DB="${SEMAPHORE_DB:-semaphore}"
 SEMAPHORE_DB_USER="${SEMAPHORE_DB_USER:-semaphore}"
 SEMAPHORE_DB_PASS="${SEMAPHORE_DB_PASS:-semaphore}"
+# Email alert env config
+SEMAPHORE_WEB_ROOT="${SEMAPHORE_WEB_ROOT:-http://127.0.0.1:8081}"
 # Semaphore Admin env config
 SEMAPHORE_ADMIN="${SEMAPHORE_ADMIN:-admin}"
 SEMAPHORE_ADMIN_EMAIL="${SEMAPHORE_ADMIN_EMAIL:-admin@localhost}"
@@ -34,10 +36,7 @@ while ! mysqladmin ping -h"$SEMAPHORE_DB_HOST" -P "$SEMAPHORE_DB_PORT" -u "$SEMA
     sleep 1
 done
 
-if [ -f "${SEMAPHORE_PLAYBOOK_PATH}/semaphore_config.json" ]; then
-    ln -s "${SEMAPHORE_PLAYBOOK_PATH}/semaphore_config.json" /etc/semaphore/semaphore_config.json
-fi
-if [ ! -f /etc/semaphore/semaphore_config.json ]; then
+if [ ! -f "${SEMAPHORE_PLAYBOOK_PATH}/semaphore_config.json" ]; then
     echoerr "Generating ${SEMAPHORE_PLAYBOOK_PATH}/config.stdin ..."
     cat << EOF > "${SEMAPHORE_PLAYBOOK_PATH}/config.stdin"
 ${SEMAPHORE_DB_HOST}:${SEMAPHORE_DB_PORT}
@@ -45,6 +44,10 @@ ${SEMAPHORE_DB_USER}
 ${SEMAPHORE_DB_PASS}
 ${SEMAPHORE_DB}
 ${SEMAPHORE_PLAYBOOK_PATH}
+${SEMAPHORE_WEB_ROOT}
+no
+no
+no
 yes
 ${SEMAPHORE_ADMIN}
 ${SEMAPHORE_ADMIN_EMAIL}
@@ -52,6 +55,8 @@ ${SEMAPHORE_ADMIN_NAME}
 ${SEMAPHORE_ADMIN_PASSWORD}
 EOF
     /usr/bin/semaphore -setup < "${SEMAPHORE_PLAYBOOK_PATH}/config.stdin"
+
+    ln -s "${SEMAPHORE_PLAYBOOK_PATH}/semaphore_config.json" /etc/semaphore/semaphore_config.json
 fi
 
 # run our command

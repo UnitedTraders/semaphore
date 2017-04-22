@@ -12,18 +12,17 @@ import (
 	"strings"
 	"time"
 
-	database "github.com/ansible-semaphore/semaphore/db"
-	"github.com/ansible-semaphore/semaphore/models"
+	"github.com/ansible-semaphore/semaphore/db"
 	"github.com/ansible-semaphore/semaphore/util"
 )
 
 type task struct {
-	task        models.Task
-	template    models.Template
-	sshKey      models.AccessKey
-	inventory   models.Inventory
-	repository  models.Repository
-	environment models.Environment
+	task        db.Task
+	template    db.Template
+	sshKey      db.AccessKey
+	inventory   db.Inventory
+	repository  db.Repository
+	environment db.Environment
 	users       []int
 	projectID   int
 	alert       bool
@@ -49,7 +48,7 @@ func (t *task) run() {
 
 		objType := "task"
 		desc := "Task ID " + strconv.Itoa(t.task.ID) + " (" + t.template.Alias + ")" + " finished - " + strings.ToUpper(t.task.Status)
-		if err := (models.Event{
+		if err := (db.Event{
 			ProjectID:   &t.projectID,
 			ObjectType:  &objType,
 			ObjectID:    &t.task.ID,
@@ -77,7 +76,7 @@ func (t *task) run() {
 
 	objType := "task"
 	desc := "Task ID " + strconv.Itoa(t.task.ID) + " (" + t.template.Alias + ")" + " is running"
-	if err := (models.Event{
+	if err := (db.Event{
 		ProjectID:   &t.projectID,
 		ObjectType:  &objType,
 		ObjectID:    &t.task.ID,
@@ -127,7 +126,7 @@ func (t *task) run() {
 }
 
 func (t *task) fetch(errMsg string, ptr interface{}, query string, args ...interface{}) error {
-	err := database.Mysql.SelectOne(ptr, query, args...)
+	err := db.Mysql.SelectOne(ptr, query, args...)
 	if err == sql.ErrNoRows {
 		t.log(errMsg)
 		return err
@@ -147,7 +146,7 @@ func (t *task) populateDetails() error {
 		return err
 	}
 
-	//get project alert setting
+	// get project alert setting
 	if err := t.fetch("Alert setting not found!", &t.alert, "select alert from project where id=?", t.template.ProjectID); err != nil {
 		return err
 	}
@@ -156,7 +155,7 @@ func (t *task) populateDetails() error {
 	var users []struct {
 		ID int `db:"id"`
 	}
-	if _, err := database.Mysql.Select(&users, "select user_id as id from project__user where project_id=?", t.template.ProjectID); err != nil {
+	if _, err := db.Mysql.Select(&users, "select user_id as id from project__user where project_id=?", t.template.ProjectID); err != nil {
 		return err
 	}
 
@@ -221,17 +220,17 @@ func (t *task) populateDetails() error {
 	return nil
 }
 
-func (t *task) installKey(key models.AccessKey) error {
+func (t *task) installKey(key db.AccessKey) error {
 	t.log("access key " + key.Name + " installed")
-	var path = key.GetPath()
-	err := ioutil.WriteFile(path, []byte(*key.Secret), 0600)
+
+	path := key.GetPath()
 	if key.Key != nil {
-		err2 := ioutil.WriteFile(path+"-cert.pub", []byte(*key.Key), 0600)
-		if err2 != nil {
-			return err2
+		if err := ioutil.WriteFile(path+"-cert.pub", []byte(*key.Key), 0600); err != nil {
+			return err
 		}
 	}
-	return err
+
+	return ioutil.WriteFile(path, []byte(*key.Secret), 0600)
 }
 
 func (t *task) updateRepository() error {
@@ -241,8 +240,8 @@ func (t *task) updateRepository() error {
 	cmd := exec.Command("git")
 	cmd.Dir = util.Config.TmpPath
 
-	gitSshCommand := "ssh -o StrictHostKeyChecking=no -i " + t.repository.SshKey.GetPath()
-	cmd.Env = t.envVars(util.Config.TmpPath, util.Config.TmpPath, &gitSshCommand)
+	gitSSHCommand := "ssh -o StrictHostKeyChecking=no -i " + t.repository.SshKey.GetPath()
+	cmd.Env = t.envVars(util.Config.TmpPath, util.Config.TmpPath, &gitSSHCommand)
 
 	repoURL, repoTag := t.repository.GitUrl, "master"
 	if split := strings.Split(repoURL, "#"); len(split) > 1 {
@@ -277,8 +276,8 @@ func (t *task) runGalaxy() error {
 	cmd := exec.Command("ansible-galaxy", args...)
 	cmd.Dir = util.Config.TmpPath + "/repository_" + strconv.Itoa(t.repository.ID)
 
-	gitSshCommand := "ssh -o StrictHostKeyChecking=no -i " + t.repository.SshKey.GetPath()
-	cmd.Env = t.envVars(util.Config.TmpPath, cmd.Dir, &gitSshCommand)
+	gitSSHCommand := "ssh -o StrictHostKeyChecking=no -i " + t.repository.SshKey.GetPath()
+	cmd.Env = t.envVars(util.Config.TmpPath, cmd.Dir, &gitSSHCommand)
 
 	if _, err := os.Stat(cmd.Dir + "/roles/requirements.yml"); err != nil {
 		return nil
@@ -311,6 +310,13 @@ func (t *task) runPlaybook() error {
 	}
 
 	if len(t.environment.JSON) > 0 {
+		var js map[string]interface{}
+		err := json.Unmarshal([]byte(t.environment.JSON), &js)
+		if err != nil {
+			t.log("JSON is not valid")
+			return err
+		}
+
 		args = append(args, "--extra-vars", t.environment.JSON)
 	}
 
@@ -338,15 +344,15 @@ func (t *task) runPlaybook() error {
 	return cmd.Run()
 }
 
-func (t *task) envVars(home string, pwd string, gitSshCommand *string) []string {
+func (t *task) envVars(home string, pwd string, gitSSHCommand *string) []string {
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HOME=%s", home))
 	env = append(env, fmt.Sprintf("PWD=%s", pwd))
 	env = append(env, fmt.Sprintln("PYTHONUNBUFFERED=1"))
 	//env = append(env, fmt.Sprintln("GIT_FLUSH=1"))
 
-	if gitSshCommand != nil {
-		env = append(env, fmt.Sprintf("GIT_SSH_COMMAND=%s", *gitSshCommand))
+	if gitSSHCommand != nil {
+		env = append(env, fmt.Sprintf("GIT_SSH_COMMAND=%s", *gitSSHCommand))
 	}
 
 	return env

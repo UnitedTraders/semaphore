@@ -26,6 +26,13 @@ type mySQLConfig struct {
 	DbName   string `json:"name"`
 }
 
+type ldapMappings struct {
+	DN   string `json:"dn"`
+	Mail string `json:"mail"`
+	Uid  string `json:"uid"`
+	CN   string `json:"cn"`
+}
+
 type configType struct {
 	MySQL mySQLConfig `json:"mysql"`
 	// Format `:port_num` eg, :3000
@@ -39,28 +46,29 @@ type configType struct {
 	CookieHash       string `json:"cookie_hash"`
 	CookieEncryption string `json:"cookie_encryption"`
 
-	//email alerting
+	// email alerting
 	EmailAlert  bool   `json:"email_alert"`
 	EmailSender string `json:"email_sender"`
 	EmailHost   string `json:"email_host"`
 	EmailPort   string `json:"email_port"`
 
-	//web host
+	// web host
 	WebHost string `json:"web_host"`
 
-	//telegram alerting
+	// ldap settings
+	LdapEnable       bool         `json:"ldap_enable"`
+	LdapBindDN       string       `json:"ldap_binddn"`
+	LdapBindPassword string       `json:"ldap_bindpassword"`
+	LdapServer       string       `json:"ldap_server"`
+	LdapNeedTLS      bool         `json:"ldap_needtls"`
+	LdapSearchDN     string       `json:"ldap_searchdn"`
+	LdapSearchFilter string       `json:"ldap_searchfilter"`
+	LdapMappings     ldapMappings `json:"ldap_mappings"`
+
+	// telegram alerting
 	TelegramAlert bool   `json:"telegram_alert"`
 	TelegramChat  string `json:"telegram_chat"`
 	TelegramToken string `json:"telegram_token"`
-
-	//ldap settings
-	LdapEnable       bool   `json:"ldap_enable"`
-	LdapBindDN       string `json:"ldap_binddn"`
-	LdapBindPassword string `json:"ldap_bindpassword"`
-	LdapServer       string `json:"ldap_server"`
-	LdapNeedTLS      bool   `json:"ldap_needtls"`
-	LdapSearchDN     string `json:"ldap_searchdn"`
-	LdapSearchFilter string `json:"ldap_searchfilter"`
 }
 
 var Config *configType
@@ -220,7 +228,7 @@ func (conf *configType) Scan() {
 
 		conf.EmailAlert = true
 
-		fmt.Print(" > Mail server host (default localhost389): ")
+		fmt.Print(" > Mail server host (default localhost): ")
 		fmt.Scanln(&conf.EmailHost)
 
 		if len(conf.EmailHost) == 0 {
@@ -271,7 +279,7 @@ func (conf *configType) Scan() {
 	}
 
 	var LdapAnswer string
-	fmt.Print(" > Enable LDAP authentificaton (y/n, default n): ")
+	fmt.Print(" > Enable LDAP authentication (y/n, default n): ")
 	fmt.Scanln(&LdapAnswer)
 	if LdapAnswer == "yes" || LdapAnswer == "y" {
 
@@ -314,11 +322,39 @@ func (conf *configType) Scan() {
 			conf.LdapSearchDN = "ou=users,dc=example"
 		}
 
-		fmt.Print(" > LDAP search filter (default (uid=%s)): ")
+		fmt.Print(" > LDAP search filter (default (uid=" + "%" + "s)): ")
 		fmt.Scanln(&conf.LdapSearchFilter)
 
 		if len(conf.LdapSearchFilter) == 0 {
 			conf.LdapSearchFilter = "(uid=%s)"
+		}
+
+		fmt.Print(" > LDAP mapping for DN field (default dn): ")
+		fmt.Scanln(&conf.LdapMappings.DN)
+
+		if len(conf.LdapMappings.DN) == 0 {
+			conf.LdapMappings.DN = "dn"
+		}
+
+		fmt.Print(" > LDAP mapping for username field (default uid): ")
+		fmt.Scanln(&conf.LdapMappings.Uid)
+
+		if len(conf.LdapMappings.Uid) == 0 {
+			conf.LdapMappings.Uid = "uid"
+		}
+
+		fmt.Print(" > LDAP mapping for full name field (default cn): ")
+		fmt.Scanln(&conf.LdapMappings.CN)
+
+		if len(conf.LdapMappings.CN) == 0 {
+			conf.LdapMappings.CN = "cn"
+		}
+
+		fmt.Print(" > LDAP mapping for email field (default mail): ")
+		fmt.Scanln(&conf.LdapMappings.Mail)
+
+		if len(conf.LdapMappings.Mail) == 0 {
+			conf.LdapMappings.Mail = "mail"
 		}
 
 	} else {

@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: SEMAPHORE
   description: Semaphore API
-  version: "2.1.0"
+  version: "2.2.0"
 
 host: localhost:3000
 
@@ -152,7 +152,7 @@ definitions:
         type: string
       environment:
         type: string
-  Task:
+  TaskOutput:
     type: object
     properties:
       task_id:
@@ -493,6 +493,19 @@ paths:
       tags:
         - project
       summary: Get users linked to project
+      parameters:
+        - name: sort
+          in: query
+          required: true
+          type: string
+          format: name/username/email/admin
+          description: sorting name
+        - name: order
+          in: query
+          required: true
+          type: string
+          format: asc/desc
+          description: ordering manner
       responses:
         200:
           description: Users
@@ -564,6 +577,18 @@ paths:
           type: string
           format: ssh/aws/gcloud/do
           description: Filter by key type
+        - name: sort
+          in: query
+          required: true
+          type: string
+          format: name/type
+          description: sorting name
+        - name: order
+          in: query
+          required: true
+          type: string
+          format: asc/desc
+          description: ordering manner
       responses:
         200:
           description: Access Keys
@@ -621,6 +646,19 @@ paths:
       tags:
         - project
       summary: Get repositories
+      parameters:
+        - name: sort
+          in: query
+          required: true
+          type: string
+          format: name/git_url/ssh_key
+          description: sorting name
+        - name: order
+          in: query
+          required: true
+          type: string
+          format: asc/desc
+          description: ordering manner
       responses:
         200:
           description: repositories
@@ -661,6 +699,19 @@ paths:
       tags:
         - project
       summary: Get inventory
+      parameters:
+        - name: sort
+          in: query
+          required: true
+          type: string
+          format: name/type
+          description: sorting name
+        - name: order
+          in: query
+          required: true
+          type: string
+          format: asc/desc
+          description: ordering manner
       responses:
         200:
           description: inventory
@@ -679,8 +730,10 @@ paths:
           schema:
             $ref: "#/definitions/Inventory"
       responses:
-        204:
+        201:
           description: inventory created
+          schema:
+              $ref: "#/definitions/Inventory"
   /project/{project_id}/inventory/{inventory_id}:
     parameters:
       - $ref: "#/parameters/project_id"
@@ -714,6 +767,19 @@ paths:
       tags:
         - project
       summary: Get environment
+      parameters:
+        - name: sort
+          in: query
+          required: true
+          type: string
+          format: name
+          description: sorting name
+        - name: order
+          in: query
+          required: true
+          type: string
+          format: asc/desc
+          description: ordering manner
       responses:
         200:
           description: environment
@@ -767,6 +833,19 @@ paths:
       tags:
         - project
       summary: Get template
+      parameters:
+        - name: sort
+          in: query
+          required: true
+          type: string
+          format: alias/playbook/ssh_key/inventory/environment/repository
+          description: sorting name
+        - name: order
+          in: query
+          required: true
+          type: string
+          format: asc/desc
+          description: ordering manner
       responses:
         200:
           description: template
