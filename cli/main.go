@@ -39,19 +39,19 @@ func main() {
 	fmt.Printf("Tmp Path (projects home) %v\n", util.Config.TmpPath)
 
 	if err := db.Connect(); err != nil {
+		fmt.Println("\n Have you run semaphore -setup?")
 		panic(err)
 	}
 
 	db.SetupDBLink()
-
 	defer db.Mysql.Db.Close()
 
+	if err := db.MigrateAll(); err != nil {
+		panic(err)
+	}
+	// legacy
 	if util.Migration {
-		fmt.Println("\n Running DB Migrations")
-		if err := db.MigrateAll(); err != nil {
-			panic(err)
-		}
-
+		fmt.Println("\n DB migrations run on startup automatically")
 		return
 	}
 
@@ -72,7 +72,7 @@ func doSetup() int {
  1. Set up configuration for a MySQL/MariaDB database
  2. Set up a path for your playbooks (auto-created)
  3. Run database Migrations
- 4. Set up initial seamphore user & password
+ 4. Set up initial semaphore user & password
 
 `)
 

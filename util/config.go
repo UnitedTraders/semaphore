@@ -8,8 +8,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/bugsnag/bugsnag-go"
-	"github.com/gin-gonic/gin"
+	"net/url"
+
 	"github.com/gorilla/securecookie"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,6 +18,7 @@ var Cookie *securecookie.SecureCookie
 var Migration bool
 var InteractiveSetup bool
 var Upgrade bool
+var WebHostURL *url.URL
 
 type mySQLConfig struct {
 	Hostname string `json:"host"`
@@ -36,8 +37,7 @@ type ldapMappings struct {
 type configType struct {
 	MySQL mySQLConfig `json:"mysql"`
 	// Format `:port_num` eg, :3000
-	Port       string `json:"port"`
-	BugsnagKey string `json:"bugsnag_key"`
+	Port string `json:"port"`
 
 	// semaphore stores projects here
 	TmpPath string `json:"tmp_path"`
@@ -160,20 +160,10 @@ func init() {
 	}
 
 	Cookie = securecookie.New(hash, encryption)
-
-	stage := ""
-	if gin.Mode() == "release" {
-		stage = "production"
-	} else {
-		stage = "development"
+	WebHostURL, _ = url.Parse(Config.WebHost)
+	if len(WebHostURL.String()) == 0 {
+		WebHostURL = nil
 	}
-	bugsnag.Configure(bugsnag.Configuration{
-		APIKey:              Config.BugsnagKey,
-		ReleaseStage:        stage,
-		NotifyReleaseStages: []string{"production"},
-		AppVersion:          Version,
-		ProjectPackages:     []string{"github.com/ansible-semaphore/semaphore/**"},
-	})
 }
 
 func (conf *configType) GenerateCookieSecrets() {
@@ -214,12 +204,8 @@ func (conf *configType) Scan() {
 	}
 	conf.TmpPath = path.Clean(conf.TmpPath)
 
-	fmt.Print(" > Web root URL (default http://localhost:8010/): ")
+	fmt.Print(" > Web root URL (optional, example http://localhost:8010/): ")
 	fmt.Scanln(&conf.WebHost)
-
-	if len(conf.WebHost) == 0 {
-		conf.WebHost = "http://localhost:8010/"
-	}
 
 	var EmailAlertAnswer string
 	fmt.Print(" > Enable email alerts (y/n, default n): ")
