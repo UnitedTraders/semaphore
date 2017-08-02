@@ -1,1 +1,2 @@
 ALTER TABLE user ADD admin BOOLEAN NOT NULL DEFAULT 1 AFTER password;
+ALTER TABLE project__user ADD launch_only BOOLEAN NOT NULL DEFAULT 0 AFTER admin;
