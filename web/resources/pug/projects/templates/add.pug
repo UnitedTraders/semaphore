@@ -15,6 +15,11 @@
 				input.form-control(type="text" readonly="readonly" ng-model="tpl.id")
 
 		.form-group
+			label.control-label.col-sm-4 Template Slug
+			.col-sm-6
+				input.form-control(type="text" placeholder="some-task" ng-model="tpl.slug")
+	
+		.form-group
 			label.control-label.col-sm-4 Playbook Name
 			.col-sm-6
 				input.form-control(type="text" placeholder="play.yml" ng-model="tpl.playbook")

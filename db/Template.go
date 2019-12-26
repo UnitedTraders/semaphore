@@ -2,7 +2,8 @@ package db
 
 // Template is a user defined model that is used to run a task
 type Template struct {
-	ID int `db:"id" json:"id"`
+	ID   int    `db:"id" json:"id"`
+	Slug string `db:"slug" json:"slug"`
 
 	SSHKeyID      int  `db:"ssh_key_id" json:"ssh_key_id"`
 	ProjectID     int  `db:"project_id" json:"project_id"`

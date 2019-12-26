@@ -27,9 +27,9 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/castawaylabs/mulekick"
+  name = "github.com/strangeman/mulekick"
   packages = ["."]
-  revision = "7029fb389811e0f873c56cfbbda64d66af48b095"
+  revision = "3d90b180d25370ed05f3173b93757c53d75883b2"
 
 [[projects]]
   branch = "master"
@@ -172,6 +172,12 @@
   packages = ["."]
   revision = "a6b93000bd219143c56c16e6cb1c4b91da3f224b"
   version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/tjarratt/babble"
+  packages = ["."]
+  revision = "eecdf8c2339de49c56f0e3ac459077db829be7ee"
 
 [[projects]]
   branch = "master"

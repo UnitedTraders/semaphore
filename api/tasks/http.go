@@ -5,18 +5,23 @@ import (
 	"strconv"
 	"time"
 
+	"database/sql"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ansible-semaphore/semaphore/db"
 	"github.com/ansible-semaphore/semaphore/util"
-	"github.com/castawaylabs/mulekick"
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/masterminds/squirrel"
+	"github.com/strangeman/mulekick"
 )
 
 // AddTask inserts a task into the database and returns a header or returns error
 func AddTask(w http.ResponseWriter, r *http.Request) {
 	project := context.Get(r, "project").(db.Project)
 	user := context.Get(r, "user").(*db.User)
+
+	slug := mux.Vars(r)["slug"]
 
 	var taskObj db.Task
 	if err := mulekick.Bind(w, r, &taskObj); err != nil {
@@ -26,6 +31,19 @@ func AddTask(w http.ResponseWriter, r *http.Request) {
 	taskObj.Created = time.Now()
 	taskObj.Status = "waiting"
 	taskObj.UserID = &user.ID
+
+	if slug != "" {
+		var template db.Template
+		if err := db.Mysql.SelectOne(&template, "select * from project__template where project_id=? and slug=?", project.ID, slug); err != nil {
+			if err == sql.ErrNoRows {
+				mulekick.WriteJSON(w, http.StatusNotFound, nil)
+				return
+			}
+		} else {
+			println(template.ID)
+			taskObj.TemplateID = template.ID
+		}
+	}
 
 	if err := db.Mysql.Insert(&taskObj); err != nil {
 		util.LogErrorWithFields(err, log.Fields{"error": "Bad request. Cannot create new task"})

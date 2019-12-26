@@ -287,6 +287,8 @@ definitions:
       environment_id:
         type: integer
         minimum: 1
+      slug:
+        type: string
       alias:
         type: string
       playbook:
@@ -301,6 +303,8 @@ definitions:
       id:
         type: integer
         minimum: 1
+      slug:
+        type: string
       ssh_key_id:
         type: integer
         minimum: 1
@@ -424,6 +428,13 @@ parameters:
     type: integer
     required: true
     x-example: 8
+  slug:
+    name: slug
+    description: Slug
+    in: path
+    type: string
+    required: true
+    x-example: some-task
 
 paths:
   /ping:
@@ -1200,6 +1211,34 @@ paths:
             properties:
               template_id:
                 type: integer
+              debug:
+                type: boolean
+              dry_run:
+                type: boolean
+              playbook:
+                type: string
+              environment:
+                type: string
+      responses:
+        201:
+          description: Task queued
+          schema:
+            $ref: "#/definitions/Task"
+  /project/{project_id}/slug/{slug}:
+    parameters:
+      - $ref: "#/parameters/project_id"
+      - $ref: "#/parameters/slug"
+    post:
+      tags:
+        - project
+      summary: Starts a job via task slug
+      parameters:
+        - name: task
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
               debug:
                 type: boolean
               dry_run:
