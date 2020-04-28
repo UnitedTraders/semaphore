@@ -59,6 +59,10 @@ type configType struct {
 	// semaphore stores ephemeral projects here
 	TmpPath string `json:"tmp_path"`
 
+	// useful for overriding default ansible binaries
+	AnsibleGalaxyCommand string `json:"ansible_galaxy_command"`
+	AnsiblePlaybookCommand string `json:"ansible_playbook_command"`
+
 	// cookie hashing & encryption
 	CookieHash       string `json:"cookie_hash"`
 	CookieEncryption string `json:"cookie_encryption"`
@@ -203,6 +207,14 @@ func validateConfig() {
 
 	if len(Config.TmpPath) == 0 {
 		Config.TmpPath = "/tmp/semaphore"
+	}
+
+	if len(Config.AnsibleGalaxyCommand) == 0 {
+		Config.AnsibleGalaxyCommand = "ansible-galaxy"
+	}
+
+	if len(Config.AnsiblePlaybookCommand) == 0 {
+		Config.AnsiblePlaybookCommand = "ansible-playbook"
 	}
 
 	if Config.MaxParallelTasks < 1 {

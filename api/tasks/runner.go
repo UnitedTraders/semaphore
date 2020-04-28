@@ -338,7 +338,7 @@ func (t *task) runGalaxy() error {
 		"--force",
 	}
 
-	cmd := exec.Command("ansible-galaxy", args...) //nolint: gas
+	cmd := exec.Command(util.Config.AnsibleGalaxyCommand, args...) //nolint: gas
 	cmd.Dir = util.Config.TmpPath + "/repository_" + strconv.Itoa(t.repository.ID)
 
 	gitSSHCommand := "ssh -o StrictHostKeyChecking=no -i " + t.repository.SSHKey.GetPath()
@@ -364,7 +364,7 @@ func (t *task) listPlaybookHosts() (string, error) {
 	}
 	args = append(args, "--list-hosts")
 
-	cmd := exec.Command("ansible-playbook", args...) //nolint: gas
+	cmd := exec.Command(util.Config.AnsiblePlaybookCommand, args...) //nolint: gas
 	cmd.Dir = util.Config.TmpPath + "/repository_" + strconv.Itoa(t.repository.ID)
 	cmd.Env = t.envVars(util.Config.TmpPath, cmd.Dir, nil)
 
@@ -388,7 +388,7 @@ func (t *task) runPlaybook() error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("ansible-playbook", args...) //nolint: gas
+	cmd := exec.Command(util.Config.AnsiblePlaybookCommand, args...) //nolint: gas
 	cmd.Dir = util.Config.TmpPath + "/repository_" + strconv.Itoa(t.repository.ID)
 	cmd.Env = t.envVars(util.Config.TmpPath, cmd.Dir, nil)
 
