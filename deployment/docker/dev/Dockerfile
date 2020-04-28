@@ -22,13 +22,15 @@ RUN apk add --no-cache git mysql-client python py-pip py-openssl openssl ca-cert
     chown -R semaphore:0 /etc/semaphore && \
     ssh-keygen -t rsa -q -f "/root/.ssh/id_rsa" -N ""       && \
     ssh-keyscan -H github.com > /root/.ssh/known_hosts      && \
-    go get -u -v github.com/go-task/task/cmd/task
+    curl -sL https://taskfile.dev/install.sh | sh && \
+    mv ./bin/task /usr/bin/task
 
 # Copy in app source
 WORKDIR ${APP_ROOT}
 COPY . ${APP_ROOT}
 RUN deployment/docker/dev/bin/install
 
-USER 1002
+USER root
 EXPOSE 3000
+
 CMD ["task", "watch"]

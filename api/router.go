@@ -8,10 +8,10 @@ import (
 	"github.com/ansible-semaphore/semaphore/api/sockets"
 	"github.com/ansible-semaphore/semaphore/api/tasks"
 	"github.com/ansible-semaphore/semaphore/util"
-	"github.com/castawaylabs/mulekick"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 	"github.com/russross/blackfriday"
+	"github.com/strangeman/mulekick"
 )
 
 var publicAssets = packr.NewBox("../web/public")
@@ -25,6 +25,7 @@ func JSONMiddleware(w http.ResponseWriter, r *http.Request) {
 func PlainTextMiddleware(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "text/plain; charset=utf-8")
 }
+
 // Route declares all routes
 func Route() mulekick.Router {
 	r := mulekick.New(mux.NewRouter(), mulekick.CorsMiddleware, JSONMiddleware)
@@ -109,6 +110,8 @@ func Route() mulekick.Router {
 		api.Post("/templates", projects.AddTemplate)
 		api.Put("/templates/{template_id}", projects.TemplatesMiddleware, projects.UpdateTemplate)
 		api.Delete("/templates/{template_id}", projects.TemplatesMiddleware, projects.RemoveTemplate)
+
+		api.Post("/slug/{slug}", tasks.AddTask)
 
 		api.Get("/tasks", tasks.GetAllTasks)
 		api.Get("/tasks/last", tasks.GetLastTasks)

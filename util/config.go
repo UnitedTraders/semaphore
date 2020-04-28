@@ -49,10 +49,19 @@ type ldapMappings struct {
 type configType struct {
 	MySQL mySQLConfig `json:"mysql"`
 	// Format `:port_num` eg, :3000
+	// if : is missing it will be corrected
 	Port string `json:"port"`
+
+	// Interface ip, put in front of the port.
+	// defaults to empty
+	Interface string `json:"interface"`
 
 	// semaphore stores ephemeral projects here
 	TmpPath string `json:"tmp_path"`
+
+	// useful for overriding default ansible binaries
+	AnsibleGalaxyCommand string `json:"ansible_galaxy_command"`
+	AnsiblePlaybookCommand string `json:"ansible_playbook_command"`
 
 	// cookie hashing & encryption
 	CookieHash       string `json:"cookie_hash"`
@@ -198,6 +207,14 @@ func validateConfig() {
 
 	if len(Config.TmpPath) == 0 {
 		Config.TmpPath = "/tmp/semaphore"
+	}
+
+	if len(Config.AnsibleGalaxyCommand) == 0 {
+		Config.AnsibleGalaxyCommand = "ansible-galaxy"
+	}
+
+	if len(Config.AnsiblePlaybookCommand) == 0 {
+		Config.AnsiblePlaybookCommand = "ansible-playbook"
 	}
 
 	if Config.MaxParallelTasks < 1 {

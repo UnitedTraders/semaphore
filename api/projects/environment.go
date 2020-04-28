@@ -7,9 +7,9 @@ import (
 
 	"github.com/ansible-semaphore/semaphore/db"
 	"github.com/ansible-semaphore/semaphore/util"
-	"github.com/castawaylabs/mulekick"
 	"github.com/gorilla/context"
 	"github.com/masterminds/squirrel"
+	"github.com/strangeman/mulekick"
 )
 
 // EnvironmentMiddleware ensures an environment exists and loads it to the context

@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/ansible-semaphore/semaphore/db"
-	"github.com/castawaylabs/mulekick"
+	"github.com/ansible-semaphore/semaphore/util"
 	"github.com/gorilla/context"
 	"github.com/masterminds/squirrel"
-	"github.com/ansible-semaphore/semaphore/util"
+	"github.com/strangeman/mulekick"
 )
 
 //nolint: gocyclo
